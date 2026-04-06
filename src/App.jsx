@@ -207,7 +207,7 @@ export default function App() {
 
   const sectionHeading = {
     fontFamily: F.heading,
-    fontSize: 'clamp(28px, 4vw, 44px)',
+    fontSize: 'clamp(26px, 3.5vw, 40px)',
     fontWeight: 500,
     color: C.charcoal,
     lineHeight: 1.2,
@@ -525,14 +525,14 @@ export default function App() {
                     fontWeight: 400,
                     background: 'transparent',
                     color: C.charcoal,
-                    border: `1px solid ${C.border}`,
+                    border: `2px solid ${C.warmGray}`,
                     borderRadius: 999,
-                    padding: '14px 32px',
+                    padding: '13px 32px',
                     cursor: 'pointer',
-                    transition: 'border-color 0.2s',
+                    transition: 'border-color 0.2s, background 0.2s',
                   }}
-                  onMouseEnter={e => e.target.style.borderColor = C.warmGray}
-                  onMouseLeave={e => e.target.style.borderColor = C.border}
+                  onMouseEnter={e => { e.target.style.borderColor = C.charcoal; e.target.style.background = 'rgba(44,40,36,0.04)'; }}
+                  onMouseLeave={e => { e.target.style.borderColor = C.warmGray; e.target.style.background = 'transparent'; }}
                 >
                   {t.nav.approach}
                 </button>
@@ -703,10 +703,11 @@ export default function App() {
               {/* Regulatory callout */}
               <ScrollReveal delay={400}>
                 <div style={{
-                  background: C.linen,
+                  background: C.white,
                   borderLeft: `2px solid ${C.gold}`,
-                  padding: '16px 20px',
+                  padding: '20px 24px',
                   borderRadius: '0 12px 12px 0',
+                  boxShadow: C.shadow,
                 }}>
                   <p style={{
                     fontFamily: F.body,
@@ -1161,7 +1162,7 @@ export default function App() {
                     transition: 'background 0.3s',
                   }}>
                     {/* Gold top accent */}
-                    <div style={{ height: 2, background: C.gold, opacity: 0.6 }} />
+                    <div style={{ height: 1.5, background: C.gold, opacity: 0.35 }} />
 
                     {/* Collapsed header */}
                     <div
@@ -1344,14 +1345,25 @@ export default function App() {
         <div style={maxWidth}>
           <ScrollReveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <div style={{
-                width: 80,
-                height: 80,
-                borderRadius: '50%',
-                background: CONTACT_PORTRAIT_URL ? `url(${CONTACT_PORTRAIT_URL}) center/cover` : C.linen,
-                border: `2px solid ${C.gold}`,
-                margin: '0 auto 20px auto',
-              }} />
+              {CONTACT_PORTRAIT_URL ? (
+                <div style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: '50%',
+                  background: `url(${CONTACT_PORTRAIT_URL}) center/cover`,
+                  border: `2px solid ${C.gold}`,
+                  margin: '0 auto 20px auto',
+                }} />
+              ) : (
+                <div style={{
+                  width: 48,
+                  height: 2,
+                  background: C.gold,
+                  opacity: 0.4,
+                  margin: '0 auto 28px auto',
+                  borderRadius: 1,
+                }} />
+              )}
               <h2 style={{ ...sectionHeading, textAlign: 'center' }}>{t.contact.heading}</h2>
               <p style={{ ...bodyText, maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>
                 {t.contact.message}

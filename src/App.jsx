@@ -1,1164 +1,1308 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import translations from './translations';
-import {
-  SHOW_SOCIAL_PROOF,
-  WHATSAPP_NUMBER,
-  EMAIL_ADDRESS,
-  SCHEDULE_URL,
-  HERO_IMAGE_URL,
-  PORTRAIT_URL,
-  CONTACT_PORTRAIT_URL,
-  PORTFOLIO,
-  MILESTONES,
-  DOCUMENTS,
-  OPPORTUNITIES,
-} from './constants';
-import { useScrollReveal, ScrollReveal } from './hooks/useScrollReveal.jsx';
+import { SHOW_SOCIAL_PROOF, WHATSAPP_NUMBER, EMAIL_ADDRESS, SCHEDULE_URL, PORTRAIT_URL, CONTACT_PORTRAIT_URL, PORTFOLIO, MILESTONES, DOCUMENTS, OPPORTUNITIES } from './constants';
+import { ScrollReveal } from './hooks/useScrollReveal';
 
-/* ═══════════════════════════════════════════════════════
-   DESIGN TOKENS
-   ═══════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════
+// Design tokens
+// ═══════════════════════════════════════════════════════
 const C = {
-  dark: '#0a0a0a',
-  darkCard: '#111111',
-  cream: '#f8f5ef',
-  sand: '#f5f0e8',
-  gold: '#b8860b',
-  goldLight: 'rgba(184,134,11,0.15)',
-  goldFaint: 'rgba(184,134,11,0.06)',
-  textLight: '#f0ece4',
-  textMuted: '#999999',
-  textDark: '#1a1a1a',
-  white: '#ffffff',
-  whatsappGreen: '#25d366',
+  ivory: '#FDFBF7',
+  sand: '#F5F0E8',
+  linen: '#F0EBE0',
+  white: '#FFFFFF',
+  charcoal: '#2C2824',
+  warmGray: '#7A7067',
+  gold: '#8B6914',
+  goldHover: '#A07B1A',
+  border: '#E8E2D8',
+  shadow: '0 2px 20px rgba(44,40,36,0.06)',
+  shadowHover: '0 8px 32px rgba(44,40,36,0.1)',
 };
 
-const FONT = {
-  serif: "'Cormorant Garamond', Georgia, serif",
-  sans: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+const F = {
+  heading: "'Fraunces', serif",
+  body: "'Outfit', sans-serif",
 };
 
-/* ═══════════════════════════════════════════════════════
-   CONCEPT ICONS (inline SVG paths, 24x24, gold fill)
-   ═══════════════════════════════════════════════════════ */
-const ConceptIcon = ({ type, size = 24, color = C.gold }) => {
-  const paths = {
-    server: (
-      <>
-        <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke={color} strokeWidth="1.5" />
-        <line x1="6" y1="8" x2="18" y2="8" stroke={color} strokeWidth="1" />
-        <line x1="6" y1="12" x2="18" y2="12" stroke={color} strokeWidth="1" />
-        <line x1="6" y1="16" x2="18" y2="16" stroke={color} strokeWidth="1" />
-        <circle cx="16" cy="6" r="1" fill={color} />
-        <circle cx="16" cy="10" r="1" fill={color} />
-      </>
-    ),
-    building: (
-      <>
-        <rect x="4" y="2" width="16" height="20" rx="1" fill="none" stroke={color} strokeWidth="1.5" />
-        <rect x="7" y="5" width="3" height="3" rx="0.5" fill={color} opacity="0.5" />
-        <rect x="14" y="5" width="3" height="3" rx="0.5" fill={color} opacity="0.5" />
-        <rect x="7" y="10" width="3" height="3" rx="0.5" fill={color} opacity="0.5" />
-        <rect x="14" y="10" width="3" height="3" rx="0.5" fill={color} opacity="0.5" />
-        <rect x="10" y="17" width="4" height="5" fill={color} opacity="0.3" />
-      </>
-    ),
-    factory: (
-      <>
-        <rect x="2" y="10" width="20" height="12" rx="1" fill="none" stroke={color} strokeWidth="1.5" />
-        <rect x="16" y="2" width="4" height="8" fill="none" stroke={color} strokeWidth="1.5" />
-        <line x1="18" y1="2" x2="18" y2="0" stroke={color} strokeWidth="1" />
-        <rect x="5" y="14" width="3" height="4" rx="0.5" fill={color} opacity="0.4" />
-        <rect x="10" y="14" width="3" height="4" rx="0.5" fill={color} opacity="0.4" />
-        <rect x="15" y="14" width="3" height="4" rx="0.5" fill={color} opacity="0.4" />
-      </>
-    ),
-    hotel: (
-      <>
-        <rect x="3" y="6" width="18" height="16" rx="1" fill="none" stroke={color} strokeWidth="1.5" />
-        <line x1="12" y1="2" x2="12" y2="6" stroke={color} strokeWidth="1.5" />
-        <polygon points="10,2 14,2 12,0" fill={color} />
-        <rect x="6" y="9" width="3" height="3" rx="0.5" fill={color} opacity="0.4" />
-        <rect x="15" y="9" width="3" height="3" rx="0.5" fill={color} opacity="0.4" />
-        <rect x="6" y="14" width="3" height="3" rx="0.5" fill={color} opacity="0.4" />
-        <rect x="15" y="14" width="3" height="3" rx="0.5" fill={color} opacity="0.4" />
-        <rect x="10" y="17" width="4" height="5" fill={color} opacity="0.3" />
-      </>
-    ),
-    mountain: (
-      <>
-        <polygon points="2,22 10,4 18,22" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
-        <polygon points="14,22 19,10 24,22" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" opacity="0.6" />
-      </>
-    ),
-    solar: (
-      <>
-        <rect x="2" y="8" width="14" height="10" rx="1" fill="none" stroke={color} strokeWidth="1.5" transform="rotate(-15 9 13)" />
-        <line x1="5" y1="11" x2="13" y2="11" stroke={color} strokeWidth="0.7" transform="rotate(-15 9 13)" />
-        <line x1="5" y1="14" x2="13" y2="14" stroke={color} strokeWidth="0.7" transform="rotate(-15 9 13)" />
-        <circle cx="20" cy="5" r="3" fill="none" stroke={color} strokeWidth="1.5" />
-        <line x1="20" y1="0" x2="20" y2="1" stroke={color} strokeWidth="1" />
-        <line x1="24" y1="5" x2="23" y2="5" stroke={color} strokeWidth="1" />
-        <line x1="20" y1="10" x2="20" y2="9" stroke={color} strokeWidth="1" />
-        <line x1="16" y1="5" x2="17" y2="5" stroke={color} strokeWidth="1" />
-      </>
-    ),
-  };
+// ═══════════════════════════════════════════════════════
+// Concept icons (simple inline SVG paths)
+// ═══════════════════════════════════════════════════════
+const conceptIcons = {
+  server: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="18" height="7" rx="1.5" stroke={C.gold} strokeWidth="1.5"/>
+      <rect x="3" y="14" width="18" height="7" rx="1.5" stroke={C.gold} strokeWidth="1.5"/>
+      <circle cx="7" cy="6.5" r="1" fill={C.gold}/>
+      <circle cx="7" cy="17.5" r="1" fill={C.gold}/>
+    </svg>
+  ),
+  building: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 21V6l8-4 8 4v15H4z" stroke={C.gold} strokeWidth="1.5"/>
+      <rect x="8" y="9" width="3" height="3" stroke={C.gold} strokeWidth="1"/>
+      <rect x="13" y="9" width="3" height="3" stroke={C.gold} strokeWidth="1"/>
+      <rect x="10" y="16" width="4" height="5" stroke={C.gold} strokeWidth="1"/>
+    </svg>
+  ),
+  factory: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 21V11l5-4v4l5-4v4l5-4v14H3z" stroke={C.gold} strokeWidth="1.5"/>
+      <rect x="6" y="14" width="3" height="3" stroke={C.gold} strokeWidth="1"/>
+      <rect x="12" y="14" width="3" height="3" stroke={C.gold} strokeWidth="1"/>
+    </svg>
+  ),
+  hotel: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M5 21V4a1 1 0 011-1h12a1 1 0 011 1v17" stroke={C.gold} strokeWidth="1.5"/>
+      <path d="M3 21h18" stroke={C.gold} strokeWidth="1.5"/>
+      <rect x="9" y="7" width="6" height="4" rx="1" stroke={C.gold} strokeWidth="1"/>
+      <rect x="10" y="16" width="4" height="5" stroke={C.gold} strokeWidth="1"/>
+    </svg>
+  ),
+  mountain: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 20L9 6l4 6 3-4 5 12H3z" stroke={C.gold} strokeWidth="1.5"/>
+    </svg>
+  ),
+  solar: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="8" r="4" stroke={C.gold} strokeWidth="1.5"/>
+      <path d="M12 1v2M12 14v2M5.6 4.6l1.4 1.4M17 10l1.4 1.4M2 8h3M19 8h3M5.6 11.4l1.4-1.4M17 6l1.4-1.4" stroke={C.gold} strokeWidth="1.2"/>
+      <path d="M4 20l4-4h8l4 4" stroke={C.gold} strokeWidth="1.5"/>
+    </svg>
+  ),
+};
 
+// ═══════════════════════════════════════════════════════
+// Laos SVG map component
+// ═══════════════════════════════════════════════════════
+function LaosMap({ locations, activeIndex, onLocationClick }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {paths[type] || paths.building}
+    <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+      <path
+        d="M45,5 L55,8 L58,15 L62,20 L60,28 L55,32 L58,38 L55,45 L50,48 L52,55 L55,60 L52,68 L48,72 L45,78 L40,82 L38,78 L35,72 L32,65 L35,58 L38,52 L35,48 L32,42 L35,35 L38,28 L42,22 L40,15 L42,10 Z"
+        fill="rgba(139,105,20,0.05)"
+        stroke={C.gold}
+        strokeWidth="1.5"
+      />
+      <path
+        d="M45,35 L48,47 L52,58"
+        fill="none"
+        stroke={C.gold}
+        strokeWidth="0.8"
+        strokeDasharray="3,2"
+        opacity="0.5"
+      />
+      {locations.map((loc, i) => (
+        <g key={i} onClick={() => onLocationClick(i)} style={{ cursor: 'pointer' }}>
+          <circle
+            cx={loc.mapX}
+            cy={loc.mapY}
+            r={activeIndex === i ? 4 : 2.5}
+            fill={C.gold}
+            opacity={activeIndex === i ? 1 : 0.7}
+          >
+            <animate
+              attributeName="r"
+              values={activeIndex === i ? '3.5;4.5;3.5' : '2;3;2'}
+              dur="2.5s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          <circle cx={loc.mapX} cy={loc.mapY} r="6" fill="transparent" />
+        </g>
+      ))}
     </svg>
   );
+}
+
+// ═══════════════════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════════════════
+function getLocalizedName(item, language) {
+  const keyMap = { ko: 'nameKO', zh: 'nameZH', lo: 'nameLO' };
+  return (keyMap[language] && item[keyMap[language]]) || item.name;
+}
+
+function getLocalizedText(obj, language) {
+  if (typeof obj === 'string') return obj;
+  if (Array.isArray(obj)) return obj;
+  return obj[language] || obj.en || '';
+}
+
+function getMilestoneText(m, language) {
+  const keyMap = { ko: 'textKO', zh: 'textZH', lo: 'textLO' };
+  return (keyMap[language] && m[keyMap[language]]) || m.text;
+}
+
+function getLocalizedArray(obj, language) {
+  if (Array.isArray(obj)) return obj;
+  if (obj && obj[language]) return obj[language];
+  if (obj && obj.en) return obj.en;
+  return [];
+}
+
+const locationNames = {
+  vientiane: 'Vientiane Capital',
+  vangvieng: 'Vang Vieng',
+  feuang: 'Feuang',
+  luangprabang: 'Luang Prabang',
 };
 
-/* ═══════════════════════════════════════════════════════
-   LANGUAGE HELPERS
-   ═══════════════════════════════════════════════════════ */
-const LANG_OPTIONS = [
-  { code: 'en', label: 'EN', full: 'English' },
-  { code: 'ko', label: '한국어', full: 'Korean' },
-  { code: 'zh', label: '中文', full: 'Chinese' },
-  { code: 'lo', label: 'ລາວ', full: 'Lao' },
-];
-
-function detectLanguage() {
-  const params = new URLSearchParams(window.location.search);
-  const langParam = params.get('lang');
-  if (langParam && translations[langParam]) return langParam;
-  const nav = (navigator.language || '').toLowerCase();
-  if (nav.startsWith('ko')) return 'ko';
-  if (nav.startsWith('zh')) return 'zh';
-  if (nav.startsWith('lo')) return 'lo';
-  return 'en';
-}
-
-/** Get localized text from an opportunity field like { en: "...", ko: "...", ... } */
-function loc(obj, lang) {
-  if (!obj) return '';
-  return obj[lang] || obj.en || '';
-}
-
-/** Get localized portfolio name */
-function portfolioName(item, lang) {
-  if (lang === 'ko') return item.nameKO || item.name;
-  if (lang === 'zh') return item.nameZH || item.name;
-  if (lang === 'lo') return item.nameLO || item.name;
-  return item.name;
-}
-
-/** Get localized milestone text */
-function milestoneText(item, lang) {
-  if (lang === 'ko') return item.textKO || item.text;
-  if (lang === 'zh') return item.textZH || item.text;
-  if (lang === 'lo') return item.textLO || item.text;
-  return item.text;
-}
-
-/* ═══════════════════════════════════════════════════════
-   MAIN APP COMPONENT
-   ═══════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════
+// Main App
+// ═══════════════════════════════════════════════════════
 export default function App() {
-  // ─── State ─────────────────────────────────────────
-  const [language, setLanguage] = useState(detectLanguage);
+  const [language, setLanguage] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlLang = params.get('lang');
+    if (urlLang && translations[urlLang]) return urlLang;
+    const navLang = (navigator.language || '').slice(0, 2);
+    if (translations[navLang]) return navLang;
+    return 'en';
+  });
   const [expandedCard, setExpandedCard] = useState(null);
   const [activeMapLocation, setActiveMapLocation] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navScrolled, setNavScrolled] = useState(false);
   const [formData, setFormData] = useState({ name: '', channel: '', message: '' });
-  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
 
-  const langDropdownRef = useRef(null);
   const t = translations[language] || translations.en;
 
-  // ─── Scroll listener for nav ───────────────────────
   useEffect(() => {
     const onScroll = () => setNavScrolled(window.scrollY > 80);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // ─── Close lang dropdown on outside click ──────────
-  useEffect(() => {
-    const handler = (e) => {
-      if (langDropdownRef.current && !langDropdownRef.current.contains(e.target)) {
-        setLangDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+  const changeLanguage = useCallback((lang) => {
+    setLanguage(lang);
+    const url = new URL(window.location);
+    url.searchParams.set('lang', lang);
+    window.history.replaceState(null, '', url);
   }, []);
 
-  // ─── Close mobile menu on nav click ────────────────
-  const navClick = useCallback((id) => {
+  const scrollTo = useCallback((id) => {
     setMobileMenuOpen(false);
     const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  // ─── Railway animation keyframes (injected once) ──
-  useEffect(() => {
-    if (document.getElementById('lk-keyframes')) return;
-    const style = document.createElement('style');
-    style.id = 'lk-keyframes';
-    style.textContent = `
-      @keyframes lk-dash { to { stroke-dashoffset: -24; } }
-      @keyframes lk-pulse { 0%,100% { r: 3; opacity: 0.9; } 50% { r: 5; opacity: 1; } }
-      @keyframes lk-scrollLine { 0%,100% { height: 20px; opacity: 0.4; } 50% { height: 35px; opacity: 1; } }
-      @keyframes lk-fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-      @keyframes lk-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; }
-      body { font-family: ${FONT.sans}; background: ${C.dark}; color: ${C.textLight}; -webkit-font-smoothing: antialiased; }
-      ::selection { background: ${C.gold}; color: ${C.dark}; }
-      input, textarea, select, button { font-family: inherit; }
-    `;
-    document.head.appendChild(style);
-  }, []);
+  const langLabels = { en: 'EN', ko: '한국어', zh: '中文', lo: 'ລາວ' };
 
-  // ═══════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
+  // SHARED STYLES
+  // ═══════════════════════════════════════════════════════
+  const sectionLabel = {
+    fontFamily: F.body,
+    fontSize: 13,
+    fontWeight: 500,
+    textTransform: 'uppercase',
+    letterSpacing: 3,
+    color: C.gold,
+    marginBottom: 16,
+    marginTop: 0,
+  };
+
+  const sectionHeading = {
+    fontFamily: F.heading,
+    fontSize: 'clamp(28px, 4vw, 44px)',
+    fontWeight: 500,
+    color: C.charcoal,
+    lineHeight: 1.2,
+    marginBottom: 24,
+    marginTop: 0,
+  };
+
+  const bodyText = {
+    fontFamily: F.body,
+    fontSize: 16,
+    fontWeight: 300,
+    lineHeight: 1.75,
+    color: C.warmGray,
+    margin: 0,
+  };
+
+  const cardBase = {
+    background: C.white,
+    borderRadius: 16,
+    border: `1px solid ${C.border}`,
+    boxShadow: C.shadow,
+    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+  };
+
+  const sectionPadding = {
+    padding: 'clamp(72px, 10vw, 120px) 24px',
+  };
+
+  const maxWidth = {
+    maxWidth: 1080,
+    margin: '0 auto',
+    width: '100%',
+  };
+
+  const hoverLift = {
+    onMouseEnter: (e) => {
+      e.currentTarget.style.transform = 'translateY(-4px)';
+      e.currentTarget.style.boxShadow = C.shadowHover;
+    },
+    onMouseLeave: (e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = C.shadow;
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════
   // RENDER
-  // ═══════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
   return (
-    <div style={{ overflowX: 'hidden' }}>
+    <div style={{ fontFamily: F.body, color: C.charcoal, background: C.ivory, overflowX: 'hidden' }}>
 
-      {/* ─────────────────────────────────────────────
-          1. NAV
-          ───────────────────────────────────────────── */}
+      {/* ─── NAV ──────────────────────────────────────────── */}
       <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-        background: navScrolled ? 'rgba(10,10,10,0.95)' : 'transparent',
-        backdropFilter: navScrolled ? 'blur(12px)' : 'none',
-        WebkitBackdropFilter: navScrolled ? 'blur(12px)' : 'none',
-        borderBottom: navScrolled ? `1px solid ${C.gold}` : '1px solid transparent',
-        transition: 'all 0.4s ease',
-        padding: '0 clamp(20px, 4vw, 60px)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        background: C.ivory,
+        borderBottom: `1px solid ${C.border}`,
+        boxShadow: navScrolled ? '0 1px 12px rgba(44,40,36,0.06)' : 'none',
+        transition: 'box-shadow 0.3s ease',
       }}>
         <div style={{
-          maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', height: 72,
+          ...maxWidth,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: 72,
+          padding: '0 24px',
         }}>
-          {/* Monogram */}
-          <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          {/* LK monogram */}
+          <div
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             style={{
-              fontFamily: FONT.serif, fontSize: 28, fontWeight: 600,
-              color: C.gold, textDecoration: 'none', letterSpacing: '0.05em',
-            }}>
+              fontFamily: F.heading,
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: 22,
+              color: C.gold,
+              letterSpacing: 2,
+              cursor: 'pointer',
+              userSelect: 'none',
+            }}
+          >
             LK
-          </a>
+          </div>
 
-          {/* Desktop nav links */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-            <div style={{ display: 'flex', gap: 28 }}
-              className="nav-desktop"
-            >
+            {/* Desktop links */}
+            <div className="lk-nav-desktop" style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
               {[
-                { id: 'why-laos', label: t.nav.whyLaos },
-                { id: 'approach', label: t.nav.approach },
-                { id: 'opportunities', label: t.opportunities.label },
-                { id: 'contact', label: t.nav.contact },
-              ].map((link) => (
-                <a key={link.id} href={`#${link.id}`}
-                  onClick={(e) => { e.preventDefault(); navClick(link.id); }}
+                ['why-laos', t.nav.whyLaos],
+                ['approach', t.nav.approach],
+                ['opportunities', t.nav.opportunities],
+                ['contact', t.nav.contact],
+              ].map(([id, label]) => (
+                <span
+                  key={id}
+                  onClick={() => scrollTo(id)}
                   style={{
-                    color: C.textMuted, textDecoration: 'none', fontSize: 14,
-                    fontWeight: 400, letterSpacing: '0.03em', transition: 'color 0.3s',
+                    fontFamily: F.body,
+                    fontSize: 13,
+                    fontWeight: 400,
+                    color: C.warmGray,
+                    cursor: 'pointer',
+                    transition: 'color 0.2s',
+                    letterSpacing: 0.5,
                   }}
-                  onMouseEnter={(e) => e.target.style.color = C.gold}
-                  onMouseLeave={(e) => e.target.style.color = C.textMuted}
+                  onMouseEnter={e => e.target.style.color = C.charcoal}
+                  onMouseLeave={e => e.target.style.color = C.warmGray}
                 >
-                  {link.label}
-                </a>
+                  {label}
+                </span>
               ))}
             </div>
 
             {/* Language selector */}
-            <div ref={langDropdownRef} style={{ position: 'relative' }}>
-              <button onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.warmGray} strokeWidth="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+              </svg>
+              <select
+                value={language}
+                onChange={e => changeLanguage(e.target.value)}
                 style={{
-                  background: 'none', border: `1px solid rgba(184,134,11,0.3)`,
-                  borderRadius: 6, padding: '6px 12px', color: C.gold,
-                  fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                  transition: 'border-color 0.3s',
-                  minHeight: 44,
+                  fontFamily: F.body,
+                  fontSize: 13,
+                  color: C.warmGray,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  outline: 'none',
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = C.gold}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(184,134,11,0.3)'}
               >
-                {/* Globe icon */}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20" />
-                </svg>
-                {LANG_OPTIONS.find(l => l.code === language)?.label || 'EN'}
-              </button>
-              {langDropdownOpen && (
-                <div style={{
-                  position: 'absolute', top: '100%', right: 0, marginTop: 6,
-                  background: 'rgba(20,20,20,0.98)', border: `1px solid ${C.gold}`,
-                  borderRadius: 8, overflow: 'hidden', minWidth: 120,
-                  boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-                }}>
-                  {LANG_OPTIONS.map((opt) => (
-                    <button key={opt.code}
-                      onClick={() => { setLanguage(opt.code); setLangDropdownOpen(false); }}
-                      style={{
-                        display: 'block', width: '100%', padding: '10px 16px',
-                        background: language === opt.code ? C.goldFaint : 'transparent',
-                        border: 'none', color: language === opt.code ? C.gold : C.textMuted,
-                        fontSize: 14, textAlign: 'left', cursor: 'pointer',
-                        transition: 'all 0.2s', minHeight: 44,
-                      }}
-                      onMouseEnter={(e) => { e.target.style.background = C.goldLight; e.target.style.color = C.gold; }}
-                      onMouseLeave={(e) => {
-                        e.target.style.background = language === opt.code ? C.goldFaint : 'transparent';
-                        e.target.style.color = language === opt.code ? C.gold : C.textMuted;
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+                {Object.entries(langLabels).map(([code, label]) => (
+                  <option key={code} value={code}>{label}</option>
+                ))}
+              </select>
             </div>
 
-            {/* Mobile hamburger */}
+            {/* CTA desktop */}
             <button
+              className="lk-nav-cta"
+              onClick={() => scrollTo('contact')}
+              style={{
+                fontFamily: F.body,
+                fontSize: 13,
+                fontWeight: 500,
+                background: C.charcoal,
+                color: C.ivory,
+                border: 'none',
+                borderRadius: 999,
+                padding: '10px 20px',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => e.target.style.background = '#3d3832'}
+              onMouseLeave={e => e.target.style.background = C.charcoal}
+            >
+              {t.nav.contact}
+            </button>
+
+            {/* Hamburger mobile */}
+            <button
+              className="lk-nav-hamburger"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               style={{
-                display: 'none', background: 'none', border: 'none',
-                color: C.gold, cursor: 'pointer', padding: 8, minHeight: 44, minWidth: 44,
+                display: 'none',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 8,
               }}
-              className="nav-hamburger"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                {mobileMenuOpen ? (
-                  <><line x1="4" y1="4" x2="20" y2="20" /><line x1="20" y1="4" x2="4" y2="20" /></>
-                ) : (
-                  <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>
-                )}
+              <svg width="24" height="24" viewBox="0 0 24 24" stroke={C.charcoal} strokeWidth="1.5" fill="none">
+                {mobileMenuOpen
+                  ? <path d="M6 6l12 12M6 18L18 6"/>
+                  : <path d="M4 7h16M4 12h16M4 17h16"/>
+                }
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Mobile menu overlay */}
+        {/* Mobile slide-down */}
         {mobileMenuOpen && (
           <div style={{
-            position: 'fixed', top: 72, left: 0, right: 0, bottom: 0,
-            background: 'rgba(10,10,10,0.98)', backdropFilter: 'blur(20px)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', gap: 32,
+            background: C.ivory,
+            borderTop: `1px solid ${C.border}`,
+            padding: 24,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 20,
           }}>
             {[
-              { id: 'why-laos', label: t.nav.whyLaos },
-              { id: 'approach', label: t.nav.approach },
-              { id: 'opportunities', label: t.opportunities.label },
-              { id: 'contact', label: t.nav.contact },
-            ].map((link) => (
-              <a key={link.id} href={`#${link.id}`}
-                onClick={(e) => { e.preventDefault(); navClick(link.id); }}
-                style={{
-                  color: C.textLight, textDecoration: 'none',
-                  fontFamily: FONT.serif, fontSize: 28, fontWeight: 400,
-                }}>
-                {link.label}
-              </a>
+              ['why-laos', t.nav.whyLaos],
+              ['approach', t.nav.approach],
+              ['opportunities', t.nav.opportunities],
+              ['contact', t.nav.contact],
+            ].map(([id, label]) => (
+              <span
+                key={id}
+                onClick={() => scrollTo(id)}
+                style={{ fontFamily: F.body, fontSize: 15, color: C.warmGray, cursor: 'pointer' }}
+              >
+                {label}
+              </span>
             ))}
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {Object.entries(langLabels).map(([code, label]) => (
+                <span
+                  key={code}
+                  onClick={() => { changeLanguage(code); setMobileMenuOpen(false); }}
+                  style={{
+                    fontFamily: F.body,
+                    fontSize: 13,
+                    color: language === code ? C.gold : C.warmGray,
+                    fontWeight: language === code ? 500 : 400,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
         )}
-
-        {/* Responsive styles */}
-        <style>{`
-          @media (max-width: 768px) {
-            .nav-desktop { display: none !important; }
-            .nav-hamburger { display: flex !important; }
-          }
-        `}</style>
       </nav>
 
-      {/* ─────────────────────────────────────────────
-          2. HERO
-          ───────────────────────────────────────────── */}
+      {/* ─── HERO (ivory) ─────────────────────────────────── */}
       <section style={{
-        minHeight: '100vh', display: 'flex', flexDirection: 'column',
-        justifyContent: 'flex-end', position: 'relative', overflow: 'hidden',
-        background: C.dark, padding: 'clamp(60px, 10vw, 100px) clamp(20px, 4vw, 60px)',
-        paddingBottom: 'clamp(80px, 12vw, 140px)',
+        background: C.ivory,
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        position: 'relative',
+        ...sectionPadding,
+        paddingTop: 'clamp(120px, 14vw, 180px)',
       }}>
-        {/* Layered radial gradients */}
         <div style={{
-          position: 'absolute', inset: 0, zIndex: 0,
-          background: `
-            radial-gradient(ellipse 80% 50% at 20% 80%, rgba(20,60,20,0.3) 0%, transparent 70%),
-            radial-gradient(ellipse 60% 40% at 80% 20%, rgba(20,50,20,0.2) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 30% at 50% 50%, rgba(184,134,11,0.04) 0%, transparent 50%)
-          `,
-        }} />
-        {/* Faint grid texture */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03,
-          backgroundImage: `linear-gradient(${C.gold} 1px, transparent 1px), linear-gradient(90deg, ${C.gold} 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
-        }} />
+          ...maxWidth,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 64,
+          alignItems: 'center',
+        }} className="lk-hero-grid">
+          {/* Left column */}
+          <div>
+            <ScrollReveal delay={0}>
+              <div style={{ width: 40, height: 1, background: C.gold, marginBottom: 32 }} />
+            </ScrollReveal>
 
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1100, margin: '0 auto', width: '100%' }}>
-          {/* Thin gold line */}
-          <div style={{
-            width: 1, height: 60, background: C.gold, marginBottom: 32,
-            animation: 'lk-fadeUp 1s ease forwards',
-            opacity: 0, animationDelay: '0.2s', animationFillMode: 'forwards',
-          }} />
+            <ScrollReveal delay={200}>
+              <h1 style={{
+                fontFamily: F.heading,
+                fontWeight: 500,
+                fontSize: 'clamp(36px, 6vw, 64px)',
+                lineHeight: 1.1,
+                color: C.charcoal,
+                margin: '0 0 24px 0',
+              }}>
+                {t.hero.headline}
+              </h1>
+            </ScrollReveal>
 
-          {/* Headline */}
-          <h1 style={{
-            fontFamily: FONT.serif, fontWeight: 400,
-            fontSize: 'clamp(36px, 6vw, 64px)', lineHeight: 1.1,
-            color: C.textLight, maxWidth: 800, marginBottom: 24,
-            letterSpacing: '-0.01em',
-            animation: 'lk-fadeUp 1s ease forwards',
-            opacity: 0, animationDelay: '0.5s', animationFillMode: 'forwards',
-          }}>
-            {t.hero.headline}
-          </h1>
+            <ScrollReveal delay={400}>
+              <p style={{ ...bodyText, fontSize: 18, marginBottom: 20, maxWidth: 520 }}>
+                {t.hero.subtitle}
+              </p>
+            </ScrollReveal>
 
-          {/* Subtitle */}
-          <p style={{
-            fontSize: 'clamp(15px, 2vw, 17px)', fontWeight: 300, color: C.textMuted,
-            maxWidth: 600, lineHeight: 1.7, marginBottom: 24,
-            animation: 'lk-fadeUp 1s ease forwards',
-            opacity: 0, animationDelay: '0.8s', animationFillMode: 'forwards',
-          }}>
-            {t.hero.subtitle}
-          </p>
+            <ScrollReveal delay={500}>
+              <p style={{
+                fontFamily: F.body,
+                fontWeight: 400,
+                fontSize: 15,
+                color: C.gold,
+                fontStyle: 'italic',
+                lineHeight: 1.6,
+                marginBottom: 36,
+                maxWidth: 480,
+              }}>
+                {t.hero.credibility}
+              </p>
+            </ScrollReveal>
 
-          {/* Credibility line */}
-          <p style={{
-            fontSize: 13, fontWeight: 400, color: C.gold, opacity: 0.8,
-            letterSpacing: '0.04em', textTransform: 'uppercase',
-            animation: 'lk-fadeUp 1s ease forwards',
-            opacity: 0, animationDelay: '1.1s', animationFillMode: 'forwards',
-          }}>
-            {t.hero.credibility}
-          </p>
+            <ScrollReveal delay={600}>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => scrollTo('opportunities')}
+                  style={{
+                    fontFamily: F.body,
+                    fontSize: 15,
+                    fontWeight: 500,
+                    background: C.charcoal,
+                    color: C.ivory,
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '14px 32px',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={e => e.target.style.background = '#3d3832'}
+                  onMouseLeave={e => e.target.style.background = C.charcoal}
+                >
+                  {t.nav.opportunities}
+                </button>
+                <button
+                  onClick={() => scrollTo('approach')}
+                  style={{
+                    fontFamily: F.body,
+                    fontSize: 15,
+                    fontWeight: 400,
+                    background: 'transparent',
+                    color: C.charcoal,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 999,
+                    padding: '14px 32px',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onMouseEnter={e => e.target.style.borderColor = C.warmGray}
+                  onMouseLeave={e => e.target.style.borderColor = C.border}
+                >
+                  {t.nav.approach}
+                </button>
+              </div>
+            </ScrollReveal>
+          </div>
+
+          {/* Right column: decorative SVG */}
+          <ScrollReveal delay={300}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+              <svg viewBox="0 0 100 100" style={{ width: '100%', maxWidth: 360 }}>
+                <path
+                  d="M45,5 L55,8 L58,15 L62,20 L60,28 L55,32 L58,38 L55,45 L50,48 L52,55 L55,60 L52,68 L48,72 L45,78 L40,82 L38,78 L35,72 L32,65 L35,58 L38,52 L35,48 L32,42 L35,35 L38,28 L42,22 L40,15 L42,10 Z"
+                  fill="none"
+                  stroke={C.gold}
+                  strokeWidth="1.5"
+                  opacity="0.6"
+                />
+                <path
+                  d="M45,35 L48,47 L52,58"
+                  fill="none"
+                  stroke={C.gold}
+                  strokeWidth="0.8"
+                  strokeDasharray="3,2"
+                  opacity="0.4"
+                />
+                {PORTFOLIO.map((loc, i) => (
+                  <circle key={i} cx={loc.mapX} cy={loc.mapY} r="2" fill={C.gold} opacity="0.7">
+                    <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" begin={`${i * 0.5}s`} />
+                  </circle>
+                ))}
+              </svg>
+            </div>
+          </ScrollReveal>
         </div>
 
         {/* Scroll indicator */}
         <div style={{
-          position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-          animation: 'lk-fadeUp 1s ease forwards',
-          opacity: 0, animationDelay: '1.5s', animationFillMode: 'forwards',
+          position: 'absolute',
+          bottom: 40,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          animation: 'subtleFloat 3s infinite',
         }}>
-          <span style={{ fontSize: 10, letterSpacing: '0.15em', color: C.gold, textTransform: 'uppercase' }}>
-            {t.hero ? (t.hero.scroll || '') : ''}
-          </span>
-          <div style={{
-            width: 1, background: C.gold,
-            animation: 'lk-scrollLine 2s ease-in-out infinite',
-          }} />
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.warmGray} strokeWidth="1.5">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────
-          3. WHY LAOS
-          ───────────────────────────────────────────── */}
-      <section id="why-laos" style={{
-        background: C.cream, color: C.textDark,
-        padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 60px)',
-      }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      {/* ─── WHY LAOS (sand) ──────────────────────────────── */}
+      <section id="why-laos" style={{ background: C.sand, ...sectionPadding }}>
+        <div style={maxWidth}>
           <ScrollReveal>
-            <p style={{
-              fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase',
-              color: C.gold, marginBottom: 12, fontWeight: 500,
-            }}>
-              {t.whyLaos.label}
-            </p>
-            <h2 style={{
-              fontFamily: FONT.serif, fontWeight: 400,
-              fontSize: 'clamp(30px, 5vw, 48px)', lineHeight: 1.15,
-              color: C.textDark, marginBottom: 60,
-            }}>
-              {t.whyLaos.heading}
-            </h2>
+            <p style={sectionLabel}>{t.whyLaos.label}</p>
+            <h2 style={sectionHeading}>{t.whyLaos.heading}</h2>
           </ScrollReveal>
 
-          {/* Two columns */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))',
-            gap: 60,
-          }}>
-            {/* Left: Insight blocks */}
-            <div>
-              {(t.whyLaos.insights || []).map((insight, i) => (
+            gridTemplateColumns: '1fr 1fr',
+            gap: 48,
+            alignItems: 'start',
+          }} className="lk-why-grid">
+            {/* Left: insight cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {t.whyLaos.insights.map((insight, i) => (
                 <ScrollReveal key={i} delay={i * 100}>
-                  <div style={{ marginBottom: 36, display: 'flex', gap: 20 }}>
-                    <div style={{
-                      width: 2, minHeight: 40, background: C.gold,
-                      flexShrink: 0, marginTop: 4,
-                    }} />
-                    <div>
-                      <h3 style={{
-                        fontFamily: FONT.serif, fontSize: 20, fontWeight: 500,
-                        color: C.textDark, marginBottom: 8,
-                      }}>
-                        {insight.title}
-                      </h3>
-                      <p style={{
-                        fontSize: 15, fontWeight: 300, lineHeight: 1.7,
-                        color: '#555', paddingLeft: 0,
-                      }}>
-                        {insight.text}
-                      </p>
-                    </div>
+                  <div
+                    style={{ ...cardBase, padding: 24, position: 'relative', overflow: 'hidden' }}
+                    {...hoverLift}
+                  >
+                    <div style={{ width: '100%', height: 2, background: C.gold, position: 'absolute', top: 0, left: 0, opacity: 0.6 }} />
+                    <h3 style={{
+                      fontFamily: F.heading,
+                      fontWeight: 600,
+                      fontSize: 18,
+                      color: C.charcoal,
+                      margin: '0 0 8px 0',
+                    }}>
+                      {insight.title}
+                    </h3>
+                    <p style={{ ...bodyText, fontSize: 15 }}>{insight.text}</p>
                   </div>
                 </ScrollReveal>
               ))}
             </div>
 
-            {/* Right: SVG map + stats */}
+            {/* Right: map + stats */}
             <div>
               <ScrollReveal delay={200}>
                 <div style={{
-                  position: 'relative', background: C.cream,
-                  borderRadius: 12, overflow: 'hidden', marginBottom: 40,
+                  background: C.linen,
+                  borderRadius: 16,
+                  padding: 32,
+                  marginBottom: 24,
                 }}>
-                  <svg viewBox="0 0 100 90" style={{ width: '100%', height: 'auto' }}>
-                    {/* Country outline */}
-                    <defs>
-                      <linearGradient id="laos-fill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#1a3a1a" />
-                        <stop offset="100%" stopColor="#0d2a0d" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d="M45,5 L55,8 L58,15 L62,20 L60,28 L55,32 L58,38 L55,45 L50,48 L52,55 L55,60 L52,68 L48,72 L45,78 L40,82 L38,78 L35,72 L32,65 L35,58 L38,52 L35,48 L32,42 L35,35 L38,28 L42,22 L40,15 L42,10 Z"
-                      fill="url(#laos-fill)" stroke={C.gold} strokeWidth="0.5" strokeOpacity="0.4"
+                  <div style={{ maxWidth: 280, margin: '0 auto' }}>
+                    <LaosMap
+                      locations={PORTFOLIO}
+                      activeIndex={activeMapLocation}
+                      onLocationClick={setActiveMapLocation}
                     />
-
-                    {/* Railway line (dashed, animated) */}
-                    <path
-                      d={`M${PORTFOLIO[3].mapX},${PORTFOLIO[3].mapY} C${PORTFOLIO[3].mapX + 3},${PORTFOLIO[3].mapY + 4} ${PORTFOLIO[1].mapX - 2},${PORTFOLIO[1].mapY + 6} ${PORTFOLIO[1].mapX},${PORTFOLIO[1].mapY} C${PORTFOLIO[1].mapX + 2},${PORTFOLIO[1].mapY - 4} ${PORTFOLIO[0].mapX + 3},${PORTFOLIO[0].mapY + 6} ${PORTFOLIO[0].mapX},${PORTFOLIO[0].mapY}`}
-                      fill="none" stroke={C.gold} strokeWidth="0.8" strokeDasharray="4 4"
-                      style={{ animation: 'lk-dash 1.5s linear infinite' }}
-                    />
-
-                    {/* Location markers */}
-                    {PORTFOLIO.map((loc, i) => (
-                      <g key={i} style={{ cursor: 'pointer' }}
-                        onClick={() => setActiveMapLocation(activeMapLocation === i ? null : i)}
-                      >
-                        <circle cx={loc.mapX} cy={loc.mapY} r="3" fill={C.gold}
-                          style={{ animation: `lk-pulse 2s ease-in-out ${i * 0.3}s infinite` }}
-                        />
-                        <circle cx={loc.mapX} cy={loc.mapY} r="6" fill="none"
-                          stroke={C.gold} strokeWidth="0.5" opacity="0.4"
-                        />
-                        <text x={loc.mapX + (i === 0 ? -2 : 8)} y={loc.mapY + (i === 0 ? -7 : -3)}
-                          fill={C.gold} fontSize="3.5" fontFamily={FONT.sans} fontWeight="400"
-                          textAnchor={i === 0 ? 'end' : 'start'}
-                        >
-                          {(t.whyLaos.mapLocations || translations.en.whyLaos.mapLocations || [])[i] || portfolioName(loc, language)}
-                        </text>
-                      </g>
-                    ))}
-                  </svg>
-
-                  {/* Info panel */}
-                  {activeMapLocation !== null && (
+                  </div>
+                  {activeMapLocation !== null && PORTFOLIO[activeMapLocation] && (
                     <div style={{
-                      padding: '16px 20px', background: 'rgba(26,26,26,0.95)',
-                      borderTop: `2px solid ${C.gold}`, borderRadius: '0 0 12px 12px',
-                      color: C.textLight, fontSize: 14, fontWeight: 300, lineHeight: 1.6,
+                      marginTop: 16,
+                      padding: '12px 16px',
+                      background: C.white,
+                      borderRadius: 12,
+                      border: `1px solid ${C.border}`,
+                      animation: 'fadeIn 0.3s ease',
                     }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <strong style={{ color: C.gold, fontWeight: 500 }}>
-                            {(t.whyLaos.mapLocations || [])[activeMapLocation] || portfolioName(PORTFOLIO[activeMapLocation], language)}
-                          </strong>
-                          <p style={{ marginTop: 6, color: '#ccc' }}>
-                            {(t.whyLaos.mapInfoPanels || translations.en.whyLaos.mapInfoPanels || [])[activeMapLocation] || ''}
-                          </p>
-                        </div>
-                        <button onClick={() => setActiveMapLocation(null)}
-                          style={{
-                            background: 'none', border: 'none', color: C.textMuted,
-                            cursor: 'pointer', fontSize: 18, padding: 4, minHeight: 44, minWidth: 44,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                          &times;
-                        </button>
-                      </div>
+                      <span style={{
+                        fontFamily: F.heading,
+                        fontWeight: 600,
+                        fontSize: 16,
+                        color: C.charcoal,
+                      }}>
+                        {getLocalizedName(PORTFOLIO[activeMapLocation], language)}
+                      </span>
+                      <span style={{
+                        fontFamily: F.body,
+                        fontSize: 13,
+                        color: C.warmGray,
+                        marginLeft: 12,
+                      }}>
+                        {PORTFOLIO[activeMapLocation].hectares} ha
+                      </span>
                     </div>
                   )}
                 </div>
               </ScrollReveal>
 
-              {/* Stats 2x2 grid */}
+              {/* Stats 2x2 */}
               <ScrollReveal delay={300}>
                 <div style={{
-                  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32,
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 16,
+                  marginBottom: 24,
                 }}>
-                  {(t.whyLaos.stats || []).map((stat, i) => (
-                    <div key={i} style={{
-                      padding: 20, background: C.white, borderRadius: 8,
-                      borderLeft: `3px solid ${C.gold}`,
-                    }}>
+                  {t.whyLaos.stats.map((stat, i) => (
+                    <div key={i} style={{ textAlign: 'center', padding: 16 }}>
                       <div style={{
-                        fontFamily: FONT.serif, fontSize: 28, fontWeight: 600,
-                        color: C.gold, marginBottom: 4,
+                        fontFamily: F.heading,
+                        fontWeight: 600,
+                        fontSize: 36,
+                        color: C.gold,
+                        lineHeight: 1,
+                        marginBottom: 4,
                       }}>
                         {stat.value}
                       </div>
-                      <div style={{ fontSize: 13, color: '#777', fontWeight: 300 }}>
+                      <div style={{
+                        fontFamily: F.body,
+                        fontWeight: 300,
+                        fontSize: 13,
+                        color: C.warmGray,
+                      }}>
                         {stat.label}
                       </div>
                     </div>
                   ))}
                 </div>
               </ScrollReveal>
+
+              {/* Regulatory callout */}
+              <ScrollReveal delay={400}>
+                <div style={{
+                  background: C.linen,
+                  borderLeft: `2px solid ${C.gold}`,
+                  padding: '16px 20px',
+                  borderRadius: '0 12px 12px 0',
+                }}>
+                  <p style={{
+                    fontFamily: F.body,
+                    fontWeight: 300,
+                    fontStyle: 'italic',
+                    fontSize: 14,
+                    color: C.warmGray,
+                    lineHeight: 1.7,
+                    margin: 0,
+                  }}>
+                    {t.whyLaos.regulatoryNote}
+                  </p>
+                </div>
+              </ScrollReveal>
             </div>
           </div>
-
-          {/* Regulatory callout */}
-          <ScrollReveal delay={400}>
-            <div style={{
-              marginTop: 48, padding: '24px 28px', background: C.white,
-              borderRadius: 8, borderLeft: `3px solid ${C.gold}`,
-              fontSize: 14, fontWeight: 300, lineHeight: 1.7, color: '#555',
-              fontStyle: 'italic',
-            }}>
-              {t.whyLaos.regulatoryNote}
-            </div>
-          </ScrollReveal>
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────
-          4. GOLD LINE DIVIDER
-          ───────────────────────────────────────────── */}
-      <div style={{
-        height: 1, margin: '60px 0',
-        background: `linear-gradient(90deg, transparent, ${C.gold}, transparent)`,
-      }} />
+      {/* ─── GOLD LINE DIVIDER ────────────────────────────── */}
+      <div style={{ background: C.ivory }}>
+        <div style={{ maxWidth: 200, margin: '0 auto', height: 1, background: C.gold, opacity: 0.3 }} />
+      </div>
 
-      {/* ─────────────────────────────────────────────
-          5. APPROACH (dark bg)
-          ───────────────────────────────────────────── */}
-      <section id="approach" style={{
-        background: C.dark,
-        padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 60px)',
-      }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-
-          {/* 5a. Intro */}
+      {/* ─── APPROACH (ivory) ─────────────────────────────── */}
+      <section id="approach" style={{ background: C.ivory, ...sectionPadding }}>
+        <div style={maxWidth}>
           <ScrollReveal>
-            <p style={{
-              fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase',
-              color: C.gold, marginBottom: 12, fontWeight: 500,
-            }}>
-              {t.approach.label}
-            </p>
-            <h2 style={{
-              fontFamily: FONT.serif, fontWeight: 400,
-              fontSize: 'clamp(30px, 5vw, 48px)', lineHeight: 1.15,
-              color: C.textLight, marginBottom: 60,
-            }}>
-              {t.approach.heading}
-            </h2>
+            <p style={sectionLabel}>{t.approach.label}</p>
+            <h2 style={sectionHeading}>{t.approach.heading}</h2>
           </ScrollReveal>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
-            gap: 60, marginBottom: 80,
-          }}>
-            {/* Portrait placeholder */}
-            <ScrollReveal delay={100}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* (a) Intro: portrait + bio */}
+          <ScrollReveal delay={100}>
+            <div style={{
+              display: 'flex',
+              gap: 32,
+              alignItems: 'flex-start',
+              marginBottom: 72,
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ textAlign: 'center', flexShrink: 0 }}>
                 <div style={{
-                  width: '100%', maxWidth: 300, aspectRatio: '4/5', borderRadius: 12,
-                  background: PORTRAIT_URL
-                    ? `url(${PORTRAIT_URL}) center/cover no-repeat`
-                    : 'linear-gradient(135deg, #1a3a1a 0%, #0d2a0d 100%)',
-                  border: `1px solid rgba(184,134,11,0.3)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {!PORTRAIT_URL && (
-                    <span style={{
-                      fontFamily: FONT.serif, fontSize: 48, color: C.gold, opacity: 0.3,
-                    }}>LK</span>
-                  )}
-                </div>
+                  width: 120,
+                  height: 120,
+                  borderRadius: '50%',
+                  background: PORTRAIT_URL ? `url(${PORTRAIT_URL}) center/cover` : C.linen,
+                  border: `2px solid ${C.gold}`,
+                  marginBottom: 12,
+                }} />
                 <p style={{
-                  marginTop: 16, fontFamily: FONT.serif, fontStyle: 'italic',
-                  fontSize: 16, color: C.textMuted,
+                  fontFamily: F.body,
+                  fontStyle: 'italic',
+                  fontSize: 14,
+                  color: C.charcoal,
+                  margin: 0,
                 }}>
                   {t.approach.name}
                 </p>
-              </div>
-            </ScrollReveal>
-
-            {/* Bio + quote */}
-            <ScrollReveal delay={200}>
-              <div>
                 <p style={{
-                  fontSize: 16, fontWeight: 300, lineHeight: 1.8,
-                  color: '#ccc', marginBottom: 28,
+                  fontFamily: F.body,
+                  fontSize: 12,
+                  color: C.warmGray,
+                  margin: '2px 0 0 0',
                 }}>
-                  {t.approach.bio}
+                  {t.approach.title}
                 </p>
-                <p style={{
-                  fontSize: 15, fontWeight: 300, lineHeight: 1.8,
-                  color: '#aaa', marginBottom: 32, paddingLeft: 20,
-                }}>
-                  {t.approach.bioIndented}
-                </p>
-                {/* Quote */}
-                <blockquote style={{
-                  borderLeft: `3px solid ${C.gold}`, paddingLeft: 24,
-                  marginLeft: 0, marginBottom: 0,
-                }}>
-                  <p style={{
-                    fontFamily: FONT.serif, fontSize: 18, fontStyle: 'italic',
-                    lineHeight: 1.7, color: C.textLight, marginBottom: 16,
-                  }}>
-                    &ldquo;{t.approach.quote || t.approach.bioIndented}&rdquo;
-                  </p>
-                  <footer style={{ fontSize: 13, color: C.gold }}>
-                    {t.approach.name} &mdash; {t.approach.title}
-                  </footer>
-                </blockquote>
               </div>
-            </ScrollReveal>
-          </div>
+              <div style={{ flex: 1, minWidth: 280 }}>
+                <p style={{ ...bodyText, marginBottom: 24 }}>{t.approach.bio}</p>
+                <div style={{ borderLeft: `1px solid ${C.gold}`, paddingLeft: 20, marginLeft: 4 }}>
+                  <p style={{ ...bodyText, fontStyle: 'italic' }}>{t.approach.bioIndented}</p>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
 
-          {/* 5b. Portfolio at a glance */}
-          <ScrollReveal>
+          {/* (b) Portfolio: 4 cards */}
+          <ScrollReveal delay={150}>
             <h3 style={{
-              fontFamily: FONT.serif, fontSize: 'clamp(24px, 4vw, 32px)',
-              fontWeight: 400, color: C.textLight, marginBottom: 32,
+              fontFamily: F.heading,
+              fontWeight: 600,
+              fontSize: 22,
+              color: C.charcoal,
+              marginBottom: 24,
+              marginTop: 0,
             }}>
               {t.approach.portfolioHeading}
             </h3>
-          </ScrollReveal>
-
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: 16, marginBottom: 32,
-          }}>
-            {PORTFOLIO.map((item, i) => (
-              <ScrollReveal key={i} delay={i * 80}>
-                <div style={{
-                  background: C.darkCard, borderRadius: 8,
-                  borderLeft: `3px solid ${C.gold}`, padding: '24px 20px',
-                }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: 20,
+              marginBottom: 16,
+            }}>
+              {PORTFOLIO.map((p, i) => (
+                <div key={i} style={{ ...cardBase, padding: 24 }} {...hoverLift}>
                   <div style={{
-                    fontFamily: FONT.serif, fontSize: 32, fontWeight: 600,
-                    color: C.gold, marginBottom: 8, lineHeight: 1,
+                    fontFamily: F.heading,
+                    fontWeight: 600,
+                    fontSize: 32,
+                    color: C.gold,
+                    lineHeight: 1,
+                    marginBottom: 8,
                   }}>
                     {String(i + 1).padStart(2, '0')}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 400, color: C.textLight, marginBottom: 6 }}>
-                    {portfolioName(item, language)}
-                  </div>
-                  <div style={{ fontSize: 13, color: C.textMuted }}>
-                    {item.hectares} ha &middot; {item.parcels} parcels
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-
-          {/* Summary stats row */}
-          <ScrollReveal delay={300}>
-            <div style={{
-              display: 'flex', flexWrap: 'wrap', gap: 32, marginBottom: 80,
-              padding: '20px 0', borderTop: `1px solid rgba(184,134,11,0.2)`,
-              borderBottom: `1px solid rgba(184,134,11,0.2)`,
-            }}>
-              {(t.socialProof?.stats || []).map((stat, i) => (
-                <div key={i} style={{ textAlign: 'center', flex: '1 1 100px' }}>
                   <div style={{
-                    fontFamily: FONT.serif, fontSize: 24, fontWeight: 600, color: C.gold,
+                    fontFamily: F.body,
+                    fontWeight: 400,
+                    fontSize: 16,
+                    color: C.charcoal,
+                    marginBottom: 4,
                   }}>
-                    {stat.value}
+                    {getLocalizedName(p, language)}
                   </div>
-                  <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4 }}>
-                    {stat.label}
+                  <div style={{
+                    fontFamily: F.body,
+                    fontWeight: 300,
+                    fontSize: 14,
+                    color: C.warmGray,
+                  }}>
+                    {p.hectares} ha &mdash; {p.parcels} parcels
                   </div>
                 </div>
               ))}
             </div>
+            {/* Summary stats row */}
+            <div style={{
+              borderTop: '1px solid rgba(139,105,20,0.15)',
+              borderBottom: '1px solid rgba(139,105,20,0.15)',
+              padding: '16px 0',
+              display: 'flex',
+              justifyContent: 'space-around',
+              flexWrap: 'wrap',
+              gap: 16,
+              marginBottom: 72,
+            }}>
+              <span style={{ fontFamily: F.body, fontSize: 14, color: C.warmGray }}>
+                {PORTFOLIO.length} regions
+              </span>
+              <span style={{ fontFamily: F.body, fontSize: 14, color: C.warmGray }}>
+                {PORTFOLIO.reduce((s, p) => s + (parseInt(p.parcels) || 0), 0) || 'TBD'} parcels
+              </span>
+            </div>
           </ScrollReveal>
 
-          {/* 5c. Milestones */}
-          <ScrollReveal>
+          {/* (c) Milestones: vertical timeline */}
+          <ScrollReveal delay={150}>
             <h3 style={{
-              fontFamily: FONT.serif, fontSize: 'clamp(24px, 4vw, 32px)',
-              fontWeight: 400, color: C.textLight, marginBottom: 40,
+              fontFamily: F.heading,
+              fontWeight: 600,
+              fontSize: 22,
+              color: C.charcoal,
+              marginBottom: 32,
+              marginTop: 0,
             }}>
               {t.approach.milestonesHeading}
             </h3>
-          </ScrollReveal>
-
-          <div style={{ position: 'relative', paddingLeft: 40, marginBottom: 80 }}>
-            {/* Vertical gold line */}
-            <div style={{
-              position: 'absolute', left: 11, top: 8, bottom: 8, width: 2,
-              background: `linear-gradient(to bottom, ${C.gold}, rgba(184,134,11,0.2))`,
-            }} />
-            {MILESTONES.map((ms, i) => (
-              <ScrollReveal key={i} delay={i * 100}>
-                <div style={{
-                  position: 'relative', marginBottom: 32, paddingLeft: 8,
-                }}>
-                  {/* Gold circle */}
-                  <div style={{
-                    position: 'absolute', left: -37, top: 4,
-                    width: 12, height: 12, borderRadius: '50%',
-                    background: C.gold, border: `2px solid ${C.dark}`,
-                  }} />
-                  <div style={{
-                    fontSize: 13, color: C.gold, fontWeight: 500,
-                    letterSpacing: '0.05em', marginBottom: 4,
-                  }}>
-                    {ms.year}
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 300, color: '#ccc', lineHeight: 1.6 }}>
-                    {milestoneText(ms, language)}
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-
-          {/* 5d. Partnership structures */}
-          <ScrollReveal>
-            <h3 style={{
-              fontFamily: FONT.serif, fontSize: 'clamp(24px, 4vw, 32px)',
-              fontWeight: 400, color: C.textLight, marginBottom: 32,
-            }}>
-              {t.approach.partnershipsHeading}
-            </h3>
-          </ScrollReveal>
-
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: 20, marginBottom: 80,
-          }}>
-            {[t.approach.jv, t.approach.lease, t.approach.acquisition].map((p, i) => (
-              <ScrollReveal key={i} delay={i * 100}>
-                <div style={{
-                  background: C.darkCard, borderRadius: 8, padding: '28px 24px',
-                  borderTop: `3px solid ${C.gold}`,
-                }}>
-                  <h4 style={{
-                    fontFamily: FONT.serif, fontSize: 20, fontWeight: 500,
-                    color: C.textLight, marginBottom: 12,
-                  }}>
-                    {p.title}
-                  </h4>
-                  <p style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.7, color: '#999' }}>
-                    {p.text}
-                  </p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-
-          {/* 5e. Process */}
-          <ScrollReveal>
-            <h3 style={{
-              fontFamily: FONT.serif, fontSize: 'clamp(24px, 4vw, 32px)',
-              fontWeight: 400, color: C.textLight, marginBottom: 40,
-            }}>
-              {t.approach.processHeading}
-            </h3>
-          </ScrollReveal>
-
-          <ScrollReveal delay={100}>
-            <div style={{
-              display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-              flexWrap: 'wrap', gap: 20, marginBottom: 80, position: 'relative',
-              padding: '0 20px',
-            }}>
-              {/* Connecting line */}
+            <div style={{ position: 'relative', paddingLeft: 32, marginBottom: 72 }}>
               <div style={{
-                position: 'absolute', top: 20, left: 40, right: 40, height: 2,
-                background: `linear-gradient(90deg, ${C.gold}, rgba(184,134,11,0.3))`,
-                zIndex: 0, display: 'var(--process-line-display, block)',
+                position: 'absolute',
+                left: 3,
+                top: 4,
+                bottom: 4,
+                width: 1,
+                background: C.border,
               }} />
-              {(t.approach.processSteps || []).map((step, i) => (
-                <div key={i} style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  flex: '1 1 100px', minWidth: 80, position: 'relative', zIndex: 1,
-                }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: '50%',
-                    border: `2px solid ${C.gold}`, background: C.dark,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: FONT.serif, fontSize: 16, color: C.gold, fontWeight: 600,
-                    marginBottom: 12,
-                  }}>
-                    {i + 1}
-                  </div>
-                  <span style={{
-                    fontSize: 12, color: C.textMuted, textAlign: 'center',
-                    fontWeight: 300, lineHeight: 1.4,
-                  }}>
-                    {step}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </ScrollReveal>
-
-          {/* 5f. Documents */}
-          <ScrollReveal>
-            <h3 style={{
-              fontFamily: FONT.serif, fontSize: 'clamp(24px, 4vw, 32px)',
-              fontWeight: 400, color: C.textLight, marginBottom: 12,
-            }}>
-              {t.approach.documentsHeading}
-            </h3>
-            <p style={{
-              fontSize: 14, fontWeight: 300, color: C.textMuted, marginBottom: 32,
-              lineHeight: 1.6, maxWidth: 600,
-            }}>
-              {t.approach.documentsNote}
-            </p>
-          </ScrollReveal>
-
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-            gap: 16,
-          }}>
-            {DOCUMENTS.map((doc, i) => (
-              <ScrollReveal key={i} delay={i * 80}>
-                <div style={{
-                  background: C.goldFaint, borderRadius: 8, padding: '28px 22px',
-                  position: 'relative', overflow: 'hidden',
-                  border: `1px solid rgba(184,134,11,0.15)`,
-                }}>
-                  {/* Fake blurred text lines */}
-                  <div style={{ marginBottom: 20, opacity: 0.15 }}>
-                    {[80, 95, 60, 88, 70, 50].map((w, j) => (
-                      <div key={j} style={{
-                        width: `${w}%`, height: 4, background: C.gold,
-                        borderRadius: 2, marginBottom: 6,
-                      }} />
-                    ))}
-                  </div>
-                  {/* Stamp circle */}
-                  <div style={{
-                    position: 'absolute', top: 18, right: 18,
-                    width: 36, height: 36, borderRadius: '50%',
-                    border: `2px solid rgba(184,134,11,0.25)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                      stroke={C.gold} strokeWidth="2" opacity="0.4">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  </div>
-                  <div style={{
-                    fontSize: 14, fontWeight: 400, color: C.textLight, marginBottom: 4,
-                  }}>
-                    {doc.type}
-                  </div>
-                  <div style={{ fontSize: 12, color: C.textMuted }}>
-                    {doc.region} {doc.typeLO ? `\u00B7 ${doc.typeLO}` : ''}
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────
-          6. SOCIAL PROOF BAND (conditional)
-          ───────────────────────────────────────────── */}
-      {SHOW_SOCIAL_PROOF && (
-        <section style={{
-          background: C.dark, padding: '60px clamp(20px, 4vw, 60px)',
-          borderTop: `1px solid rgba(184,134,11,0.2)`,
-          borderBottom: `1px solid rgba(184,134,11,0.2)`,
-        }}>
-          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-            <div style={{
-              display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 40,
-            }}>
-              {(t.socialProof?.stats || []).map((stat, i) => (
-                <ScrollReveal key={i} delay={i * 100}>
-                  <div style={{
-                    textAlign: 'center', padding: '20px 32px',
-                    borderLeft: i > 0 ? `1px solid rgba(184,134,11,0.2)` : 'none',
-                  }}>
+              {MILESTONES.map((m, i) => (
+                <ScrollReveal key={i} delay={i * 80}>
+                  <div style={{ marginBottom: 28, position: 'relative' }}>
                     <div style={{
-                      fontFamily: FONT.serif, fontSize: 36, fontWeight: 600, color: C.gold,
+                      position: 'absolute',
+                      left: -32,
+                      top: 5,
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: C.gold,
+                    }} />
+                    <span style={{
+                      fontFamily: F.body,
+                      fontWeight: 500,
+                      fontSize: 14,
+                      color: C.gold,
+                      display: 'block',
+                      marginBottom: 4,
                     }}>
-                      {stat.value}
-                    </div>
-                    <div style={{ fontSize: 13, color: C.textMuted, marginTop: 6 }}>
-                      {stat.label}
-                    </div>
+                      {m.year}
+                    </span>
+                    <span style={{
+                      fontFamily: F.body,
+                      fontWeight: 300,
+                      fontSize: 15,
+                      color: C.warmGray,
+                      lineHeight: 1.6,
+                    }}>
+                      {getMilestoneText(m, language)}
+                    </span>
                   </div>
                 </ScrollReveal>
               ))}
             </div>
+          </ScrollReveal>
+
+          {/* (d) Partnership structures: 3 cards */}
+          <ScrollReveal delay={150}>
+            <h3 style={{
+              fontFamily: F.heading,
+              fontWeight: 600,
+              fontSize: 22,
+              color: C.charcoal,
+              marginBottom: 24,
+              marginTop: 0,
+            }}>
+              {t.approach.partnershipsHeading}
+            </h3>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 20,
+              marginBottom: 72,
+            }}>
+              {['jv', 'lease', 'acquisition'].map((key) => (
+                <div key={key} style={{ ...cardBase, padding: 28, position: 'relative' }} {...hoverLift}>
+                  <div style={{ width: 32, height: 2, background: C.gold, marginBottom: 16 }} />
+                  <h4 style={{
+                    fontFamily: F.heading,
+                    fontWeight: 600,
+                    fontSize: 18,
+                    color: C.charcoal,
+                    margin: '0 0 10px 0',
+                  }}>
+                    {t.approach[key].title}
+                  </h4>
+                  <p style={{ ...bodyText, fontSize: 15 }}>{t.approach[key].text}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+
+          {/* (e) Process: 5 connected circles */}
+          <ScrollReveal delay={150}>
+            <h3 style={{
+              fontFamily: F.heading,
+              fontWeight: 600,
+              fontSize: 22,
+              color: C.charcoal,
+              marginBottom: 32,
+              marginTop: 0,
+            }}>
+              {t.approach.processHeading}
+            </h3>
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'center',
+              gap: 0,
+              marginBottom: 72,
+              flexWrap: 'wrap',
+            }}>
+              {t.approach.processSteps.map((step, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      border: `1.5px solid ${C.gold}`,
+                      background: 'rgba(139,105,20,0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: F.body,
+                      fontWeight: 500,
+                      fontSize: 14,
+                      color: C.gold,
+                      marginBottom: 10,
+                    }}>
+                      {i + 1}
+                    </div>
+                    <span style={{
+                      fontFamily: F.body,
+                      fontWeight: 300,
+                      fontSize: 12,
+                      color: C.warmGray,
+                      display: 'block',
+                      maxWidth: 80,
+                      lineHeight: 1.4,
+                    }}>
+                      {step}
+                    </span>
+                  </div>
+                  {i < t.approach.processSteps.length - 1 && (
+                    <div style={{
+                      width: 40,
+                      height: 1,
+                      background: C.border,
+                      marginTop: 20,
+                      marginLeft: 8,
+                      marginRight: 8,
+                    }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+
+          {/* (f) Documents: 4 blurred-doc cards */}
+          <ScrollReveal delay={150}>
+            <h3 style={{
+              fontFamily: F.heading,
+              fontWeight: 600,
+              fontSize: 22,
+              color: C.charcoal,
+              marginBottom: 12,
+              marginTop: 0,
+            }}>
+              {t.approach.documentsHeading}
+            </h3>
+            <p style={{ ...bodyText, marginBottom: 24, maxWidth: 600 }}>{t.approach.documentsNote}</p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 16,
+            }}>
+              {DOCUMENTS.map((doc, i) => (
+                <div key={i} style={{
+                  background: C.linen,
+                  borderRadius: 16,
+                  padding: 24,
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}>
+                  {/* Fake document text lines */}
+                  {[72, 58, 80, 45, 65].map((w, j) => (
+                    <div key={j} style={{
+                      width: `${w}%`,
+                      height: 3,
+                      background: C.charcoal,
+                      opacity: 0.05 + j * 0.008,
+                      borderRadius: 2,
+                      marginBottom: 8,
+                    }} />
+                  ))}
+                  {/* Stamp circle */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 16,
+                    right: 16,
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    border: `1.5px solid ${C.gold}`,
+                    opacity: 0.3,
+                  }} />
+                  <div style={{
+                    fontFamily: F.body,
+                    fontWeight: 500,
+                    fontSize: 13,
+                    color: C.gold,
+                    marginTop: 16,
+                  }}>
+                    {language === 'lo' && doc.typeLO ? doc.typeLO : doc.type}
+                  </div>
+                  <div style={{
+                    fontFamily: F.body,
+                    fontWeight: 300,
+                    fontSize: 12,
+                    color: C.warmGray,
+                    marginTop: 2,
+                  }}>
+                    {doc.region}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ─── SOCIAL PROOF (conditional, linen band) ───────── */}
+      {SHOW_SOCIAL_PROOF && (
+        <section style={{
+          background: C.linen,
+          padding: 'clamp(48px, 6vw, 72px) 24px',
+        }}>
+          <div style={{
+            ...maxWidth,
+            display: 'flex',
+            justifyContent: 'space-around',
+            flexWrap: 'wrap',
+            gap: 32,
+          }}>
+            {t.socialProof.stats.map((stat, i) => (
+              <ScrollReveal key={i} delay={i * 100}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontFamily: F.heading,
+                    fontWeight: 600,
+                    fontSize: 40,
+                    color: C.charcoal,
+                    lineHeight: 1,
+                    marginBottom: 4,
+                  }}>
+                    {stat.value}
+                  </div>
+                  <div style={{
+                    fontFamily: F.body,
+                    fontWeight: 300,
+                    fontSize: 14,
+                    color: C.warmGray,
+                  }}>
+                    {stat.label}
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
           </div>
         </section>
       )}
 
-      {/* ─────────────────────────────────────────────
-          7. OPPORTUNITIES
-          ───────────────────────────────────────────── */}
-      <section id="opportunities" style={{
-        background: '#111', padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 60px)',
-      }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      {/* ─── OPPORTUNITIES (DARK section) ─────────────────── */}
+      <section id="opportunities" style={{ background: C.charcoal, ...sectionPadding }}>
+        <div style={maxWidth}>
           <ScrollReveal>
+            <p style={{ ...sectionLabel, color: C.gold }}>{t.opportunities.label}</p>
+            <h2 style={{ ...sectionHeading, color: C.linen }}>{t.opportunities.heading}</h2>
             <p style={{
-              fontSize: 12, letterSpacing: '0.15em', textTransform: 'uppercase',
-              color: C.gold, marginBottom: 12, fontWeight: 500,
-            }}>
-              {t.opportunities.label}
-            </p>
-            <h2 style={{
-              fontFamily: FONT.serif, fontWeight: 400,
-              fontSize: 'clamp(30px, 5vw, 48px)', lineHeight: 1.15,
-              color: C.textLight, marginBottom: 16,
-            }}>
-              {t.opportunities.heading}
-            </h2>
-            <p style={{
-              fontSize: 15, fontWeight: 300, color: C.textMuted,
-              marginBottom: 48, maxWidth: 600, lineHeight: 1.7,
+              fontFamily: F.body,
+              fontSize: 16,
+              fontWeight: 300,
+              lineHeight: 1.75,
+              color: 'rgba(240,236,224,0.7)',
+              marginBottom: 48,
+              maxWidth: 600,
             }}>
               {t.opportunities.subtitle}
             </p>
           </ScrollReveal>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {OPPORTUNITIES.map((opp, i) => {
-              const isExpanded = expandedCard === opp.id;
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {OPPORTUNITIES.map((opp) => {
+              const isOpen = expandedCard === opp.id;
               return (
-                <ScrollReveal key={opp.id} delay={i * 80}>
+                <ScrollReveal key={opp.id} delay={100}>
                   <div style={{
-                    background: C.dark, borderRadius: 10,
-                    borderLeft: `4px solid ${C.gold}`,
-                    overflow: 'hidden', transition: 'all 0.4s ease',
-                    border: isExpanded ? `1px solid rgba(184,134,11,0.3)` : `1px solid rgba(255,255,255,0.05)`,
-                    borderLeftWidth: 4, borderLeftColor: C.gold,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    transition: 'background 0.3s',
                   }}>
+                    {/* Gold top accent */}
+                    <div style={{ height: 2, background: C.gold, opacity: 0.6 }} />
+
                     {/* Collapsed header */}
                     <div
+                      onClick={() => setExpandedCard(isOpen ? null : opp.id)}
                       style={{
-                        padding: '24px 28px', cursor: 'pointer',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                        padding: '28px 32px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
                       }}
-                      onClick={() => setExpandedCard(isExpanded ? null : opp.id)}
                     >
-                      <div style={{ flex: 1, paddingRight: 20 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                          <h3 style={{
-                            fontFamily: FONT.serif, fontSize: 22, fontWeight: 500,
-                            color: C.textLight,
-                          }}>
-                            {portfolioName(PORTFOLIO.find(p => p.name.toLowerCase().replace(/\s/g, '') === opp.id.replace(/\s/g, '')) || { name: opp.id }, language)}
-                          </h3>
-                          <span style={{
-                            fontSize: 11, padding: '3px 10px', borderRadius: 20,
-                            background: C.goldFaint, color: C.gold,
-                            fontWeight: 400, whiteSpace: 'nowrap',
-                          }}>
-                            {loc(opp.category, language)}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 6 }}>
-                          {loc(opp.size, language)}
-                        </p>
-                        <p style={{ fontSize: 14, fontWeight: 300, color: '#aaa', lineHeight: 1.6 }}>
-                          {loc(opp.summary, language)}
+                      <div style={{ flex: 1 }}>
+                        <span style={{
+                          fontFamily: F.body,
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: C.gold,
+                          textTransform: 'uppercase',
+                          letterSpacing: 2,
+                          display: 'block',
+                          marginBottom: 8,
+                        }}>
+                          {getLocalizedText(opp.category, language)}
+                        </span>
+                        <h3 style={{
+                          fontFamily: F.heading,
+                          fontWeight: 500,
+                          fontSize: 'clamp(20px, 3vw, 28px)',
+                          color: C.linen,
+                          margin: '0 0 8px 0',
+                        }}>
+                          {locationNames[opp.id] || opp.id}
+                        </h3>
+                        <p style={{
+                          fontFamily: F.body,
+                          fontSize: 14,
+                          fontWeight: 300,
+                          color: 'rgba(240,236,224,0.7)',
+                          margin: 0,
+                          lineHeight: 1.6,
+                          maxWidth: 600,
+                        }}>
+                          {getLocalizedText(opp.summary, language)}
                         </p>
                       </div>
-                      <button style={{
-                        background: 'none', border: `1px solid rgba(184,134,11,0.4)`,
-                        borderRadius: '50%', width: 36, height: 36, minWidth: 36, minHeight: 44,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: C.gold, fontSize: 20, cursor: 'pointer',
-                        transition: 'transform 0.3s, background 0.3s',
-                        transform: isExpanded ? 'rotate(45deg)' : 'none',
+                      {/* + / x button */}
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         flexShrink: 0,
-                      }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = C.goldFaint}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      >
-                        +
-                      </button>
+                        marginLeft: 20,
+                        transition: 'transform 0.3s',
+                        transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+                      }}>
+                        <svg width="14" height="14" viewBox="0 0 14 14" stroke={C.linen} strokeWidth="1.5" fill="none">
+                          <path d="M7 1v12M1 7h12"/>
+                        </svg>
+                      </div>
                     </div>
 
                     {/* Expanded content */}
-                    {isExpanded && (
-                      <div style={{
-                        padding: '0 28px 28px',
-                        animation: 'lk-fadeUp 0.4s ease',
-                      }}>
+                    {isOpen && (
+                      <div style={{ padding: '0 32px 32px 32px' }}>
                         <p style={{
-                          fontSize: 15, fontWeight: 300, color: '#bbb',
-                          lineHeight: 1.7, marginBottom: 28,
+                          fontFamily: F.body,
+                          fontSize: 15,
+                          fontWeight: 300,
+                          color: 'rgba(240,236,224,0.65)',
+                          lineHeight: 1.75,
+                          marginBottom: 28,
+                          maxWidth: 700,
                         }}>
-                          {loc(opp.description, language)}
+                          {getLocalizedText(opp.description, language)}
+                        </p>
+
+                        <p style={{
+                          fontFamily: F.body,
+                          fontSize: 13,
+                          color: C.gold,
+                          marginBottom: 24,
+                        }}>
+                          {getLocalizedText(opp.size, language)}
                         </p>
 
                         {/* Concept cards */}
-                        <h4 style={{
-                          fontSize: 13, letterSpacing: '0.1em', textTransform: 'uppercase',
-                          color: C.gold, marginBottom: 16, fontWeight: 500,
-                        }}>
-                          {t.opportunities.requestBriefing ? 'Development concepts' : 'Concepts'}
-                        </h4>
                         <div style={{
                           display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                          gap: 16, marginBottom: 24,
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                          gap: 16,
+                          marginBottom: 24,
                         }}>
-                          {(opp.concepts || []).map((concept, ci) => (
+                          {opp.concepts.map((concept, ci) => (
                             <div key={ci} style={{
-                              background: 'rgba(255,255,255,0.03)', borderRadius: 8,
-                              padding: '20px 18px', border: `1px solid rgba(184,134,11,0.1)`,
+                              background: 'rgba(255,255,255,0.03)',
+                              borderRadius: 12,
+                              padding: 20,
+                              border: '1px solid rgba(255,255,255,0.05)',
                             }}>
                               <div style={{ marginBottom: 12 }}>
-                                <ConceptIcon type={concept.icon} size={28} />
+                                {conceptIcons[concept.icon] || null}
                               </div>
-                              <h5 style={{
-                                fontSize: 15, fontWeight: 500, color: C.textLight,
-                                marginBottom: 8,
+                              <h4 style={{
+                                fontFamily: F.heading,
+                                fontWeight: 500,
+                                fontSize: 16,
+                                color: C.linen,
+                                margin: '0 0 8px 0',
                               }}>
-                                {loc(concept.title, language)}
-                              </h5>
+                                {getLocalizedText(concept.title, language)}
+                              </h4>
                               <p style={{
-                                fontSize: 13, fontWeight: 300, color: '#999', lineHeight: 1.6,
+                                fontFamily: F.body,
+                                fontWeight: 300,
+                                fontSize: 14,
+                                color: 'rgba(240,236,224,0.6)',
+                                lineHeight: 1.65,
+                                margin: 0,
                               }}>
-                                {loc(concept.text, language)}
+                                {getLocalizedText(concept.text, language)}
                               </p>
                             </div>
                           ))}
                         </div>
 
                         {/* Advantage pills */}
-                        <div style={{
-                          display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24,
-                        }}>
-                          {(loc(opp.advantages, language) || []).map((adv, ai) => (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                          {getLocalizedArray(opp.advantages, language).map((adv, ai) => (
                             <span key={ai} style={{
-                              padding: '6px 14px', borderRadius: 20, fontSize: 12,
-                              background: C.goldFaint, color: C.gold, fontWeight: 400,
-                              border: `1px solid rgba(184,134,11,0.2)`,
+                              fontFamily: F.body,
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: C.gold,
+                              background: 'rgba(139,105,20,0.15)',
+                              borderRadius: 999,
+                              padding: '6px 14px',
                             }}>
                               {adv}
                             </span>
@@ -1166,22 +1310,25 @@ export default function App() {
                         </div>
 
                         {/* CTA */}
-                        <a
-                          href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                            `${(t.contact?.whatsapp?.prefill || 'Hello')} [${opp.id}]`
-                          )}`}
-                          target="_blank" rel="noopener noreferrer"
+                        <button
+                          onClick={(e) => { e.stopPropagation(); scrollTo('contact'); }}
                           style={{
-                            display: 'inline-block', padding: '12px 28px',
-                            background: C.gold, color: C.dark, borderRadius: 6,
-                            fontSize: 14, fontWeight: 500, textDecoration: 'none',
-                            transition: 'opacity 0.3s',
+                            fontFamily: F.body,
+                            fontSize: 14,
+                            fontWeight: 500,
+                            background: C.gold,
+                            color: C.charcoal,
+                            border: 'none',
+                            borderRadius: 999,
+                            padding: '12px 28px',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s',
                           }}
-                          onMouseEnter={(e) => e.target.style.opacity = '0.85'}
-                          onMouseLeave={(e) => e.target.style.opacity = '1'}
+                          onMouseEnter={e => e.target.style.background = C.goldHover}
+                          onMouseLeave={e => e.target.style.background = C.gold}
                         >
                           {t.opportunities.requestBriefing}
-                        </a>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1192,249 +1339,260 @@ export default function App() {
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────
-          8. CONTACT
-          ───────────────────────────────────────────── */}
-      <section id="contact" style={{
-        background: C.sand, color: C.textDark,
-        padding: 'clamp(60px, 8vw, 100px) clamp(20px, 4vw, 60px)',
-      }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          {/* Portrait + heading */}
+      {/* ─── CONTACT (sand) ───────────────────────────────── */}
+      <section id="contact" style={{ background: C.sand, ...sectionPadding }}>
+        <div style={maxWidth}>
           <ScrollReveal>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 48 }}>
+            <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <div style={{
-                width: 80, height: 80, borderRadius: '50%', marginBottom: 20,
-                background: CONTACT_PORTRAIT_URL
-                  ? `url(${CONTACT_PORTRAIT_URL}) center/cover no-repeat`
-                  : 'linear-gradient(135deg, #1a3a1a 0%, #0d2a0d 100%)',
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: CONTACT_PORTRAIT_URL ? `url(${CONTACT_PORTRAIT_URL}) center/cover` : C.linen,
                 border: `2px solid ${C.gold}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {!CONTACT_PORTRAIT_URL && (
-                  <span style={{ fontFamily: FONT.serif, fontSize: 24, color: C.gold, opacity: 0.5 }}>LK</span>
-                )}
-              </div>
-              <h2 style={{
-                fontFamily: FONT.serif, fontWeight: 400,
-                fontSize: 'clamp(30px, 5vw, 48px)', lineHeight: 1.15,
-                color: C.textDark, textAlign: 'center', marginBottom: 16,
-              }}>
-                {t.contact.heading}
-              </h2>
-              <p style={{
-                fontSize: 15, fontWeight: 300, lineHeight: 1.7,
-                color: '#666', maxWidth: 560, textAlign: 'center',
-              }}>
+                margin: '0 auto 20px auto',
+              }} />
+              <h2 style={{ ...sectionHeading, textAlign: 'center' }}>{t.contact.heading}</h2>
+              <p style={{ ...bodyText, maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>
                 {t.contact.message}
               </p>
             </div>
           </ScrollReveal>
 
-          {/* Contact cards */}
+          {/* 3 contact cards */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: 16, marginBottom: 40,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: 20,
+            marginBottom: 32,
           }}>
             {/* WhatsApp */}
-            <ScrollReveal delay={0}>
-              <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(t.contact?.whatsapp?.prefill || '')}`}
-                target="_blank" rel="noopener noreferrer"
-                style={{
-                  display: 'block', padding: '28px 24px', borderRadius: 10,
-                  background: '#fff', textDecoration: 'none', color: C.textDark,
-                  border: '1px solid rgba(37,211,102,0.2)',
-                  transition: 'transform 0.3s, box-shadow 0.3s',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,211,102,0.12)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)'; }}
+            <ScrollReveal delay={100}>
+              <a
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(t.contact.whatsapp.prefill)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: 'none', display: 'block' }}
               >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8, marginBottom: 14,
-                  background: 'rgba(37,211,102,0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill={C.whatsappGreen}>
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                <div style={{ ...cardBase, padding: 28, background: 'rgba(37,211,102,0.03)' }} {...hoverLift}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#25D366" style={{ marginBottom: 12 }}>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                   </svg>
+                  <h3 style={{
+                    fontFamily: F.heading,
+                    fontWeight: 600,
+                    fontSize: 18,
+                    color: C.charcoal,
+                    margin: '0 0 6px 0',
+                  }}>
+                    {t.contact.whatsapp.title}
+                  </h3>
+                  <p style={{ ...bodyText, fontSize: 14 }}>{t.contact.whatsapp.text}</p>
                 </div>
-                <h4 style={{ fontSize: 16, fontWeight: 500, marginBottom: 6 }}>
-                  {t.contact.whatsapp.title}
-                </h4>
-                <p style={{ fontSize: 13, fontWeight: 300, color: '#777', lineHeight: 1.5 }}>
-                  {t.contact.whatsapp.text}
-                </p>
               </a>
             </ScrollReveal>
 
             {/* Email */}
-            <ScrollReveal delay={100}>
-              <a href={`mailto:${EMAIL_ADDRESS}`}
-                style={{
-                  display: 'block', padding: '28px 24px', borderRadius: 10,
-                  background: '#fff', textDecoration: 'none', color: C.textDark,
-                  border: '1px solid rgba(184,134,11,0.15)',
-                  transition: 'transform 0.3s, box-shadow 0.3s',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(184,134,11,0.08)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)'; }}
-              >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8, marginBottom: 14,
-                  background: C.goldFaint,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2">
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <path d="M22 4L12 13 2 4" />
+            <ScrollReveal delay={200}>
+              <a href={`mailto:${EMAIL_ADDRESS}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <div style={{ ...cardBase, padding: 28 }} {...hoverLift}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.charcoal} strokeWidth="1.5" style={{ marginBottom: 12 }}>
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="M22 7l-10 7L2 7"/>
                   </svg>
+                  <h3 style={{
+                    fontFamily: F.heading,
+                    fontWeight: 600,
+                    fontSize: 18,
+                    color: C.charcoal,
+                    margin: '0 0 6px 0',
+                  }}>
+                    {t.contact.email.title}
+                  </h3>
+                  <p style={{ ...bodyText, fontSize: 14 }}>{t.contact.email.text}</p>
                 </div>
-                <h4 style={{ fontSize: 16, fontWeight: 500, marginBottom: 6 }}>
-                  {t.contact.email.title}
-                </h4>
-                <p style={{ fontSize: 13, fontWeight: 300, color: '#777', lineHeight: 1.5 }}>
-                  {t.contact.email.text}
-                </p>
               </a>
             </ScrollReveal>
 
             {/* Schedule */}
-            <ScrollReveal delay={200}>
-              <a href={SCHEDULE_URL} target="_blank" rel="noopener noreferrer"
-                style={{
-                  display: 'block', padding: '28px 24px', borderRadius: 10,
-                  background: '#fff', textDecoration: 'none', color: C.textDark,
-                  border: '1px solid rgba(184,134,11,0.15)',
-                  transition: 'transform 0.3s, box-shadow 0.3s',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(184,134,11,0.08)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.04)'; }}
-              >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8, marginBottom: 14,
-                  background: C.goldFaint,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.gold} strokeWidth="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
+            <ScrollReveal delay={300}>
+              <a href={SCHEDULE_URL} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>
+                <div style={{ ...cardBase, padding: 28 }} {...hoverLift}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.charcoal} strokeWidth="1.5" style={{ marginBottom: 12 }}>
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                    <circle cx="12" cy="16" r="1" fill={C.charcoal}/>
                   </svg>
+                  <h3 style={{
+                    fontFamily: F.heading,
+                    fontWeight: 600,
+                    fontSize: 18,
+                    color: C.charcoal,
+                    margin: '0 0 6px 0',
+                  }}>
+                    {t.contact.schedule.title}
+                  </h3>
+                  <p style={{ ...bodyText, fontSize: 14 }}>{t.contact.schedule.text}</p>
                 </div>
-                <h4 style={{ fontSize: 16, fontWeight: 500, marginBottom: 6 }}>
-                  {t.contact.schedule.title}
-                </h4>
-                <p style={{ fontSize: 13, fontWeight: 300, color: '#777', lineHeight: 1.5 }}>
-                  {t.contact.schedule.text}
-                </p>
               </a>
             </ScrollReveal>
           </div>
 
-          {/* Language note */}
+          {/* Platform chips + lang note */}
           <ScrollReveal delay={200}>
-            <p style={{
-              fontSize: 13, fontWeight: 300, color: '#888', textAlign: 'center',
-              marginBottom: 32, fontStyle: 'italic',
-            }}>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+              {Object.values(t.contact.platforms).map((p, i) => (
+                <span key={i} style={{
+                  fontFamily: F.body,
+                  fontSize: 13,
+                  fontWeight: 400,
+                  color: C.warmGray,
+                  background: C.linen,
+                  borderRadius: 999,
+                  padding: '6px 14px',
+                }}>
+                  {p}
+                </span>
+              ))}
+            </div>
+            <p style={{ ...bodyText, fontSize: 13, textAlign: 'center', marginBottom: 48 }}>
               {t.contact.langNote}
             </p>
           </ScrollReveal>
 
-          {/* Messaging platforms row */}
-          <ScrollReveal delay={250}>
-            <div style={{
-              display: 'flex', flexWrap: 'wrap', justifyContent: 'center',
-              gap: 10, marginBottom: 48,
-            }}>
-              {['WhatsApp', 'WeChat', 'KakaoTalk', 'Line', 'Telegram'].map((platform) => (
-                <span key={platform} style={{
-                  padding: '6px 16px', borderRadius: 20, fontSize: 12,
-                  background: '#fff', color: '#555', fontWeight: 400,
-                  border: '1px solid rgba(0,0,0,0.08)',
-                }}>
-                  {platform}
-                </span>
-              ))}
-            </div>
-          </ScrollReveal>
-
           {/* Contact form */}
-          <ScrollReveal delay={300}>
+          <ScrollReveal delay={200}>
             <form
               name="contact"
               method="POST"
               data-netlify="true"
-              style={{
-                maxWidth: 560, margin: '0 auto',
-                display: 'flex', flexDirection: 'column', gap: 16,
-              }}
-              onSubmit={(e) => e.preventDefault()}
+              style={{ maxWidth: 520, margin: '0 auto' }}
             >
               <input type="hidden" name="form-name" value="contact" />
+              <input type="hidden" name="lang" value={language} />
 
-              <input
-                type="text" name="name" placeholder={t.contact.formName}
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{
+                  fontFamily: F.body,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: C.charcoal,
+                  display: 'block',
+                  marginBottom: 6,
+                }}>
+                  {t.contact.formName}
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    fontFamily: F.body,
+                    fontSize: 15,
+                    padding: '12px 16px',
+                    background: C.ivory,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 12,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={e => e.target.style.borderColor = C.gold}
+                  onBlur={e => e.target.style.borderColor = C.border}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{
+                  fontFamily: F.body,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: C.charcoal,
+                  display: 'block',
+                  marginBottom: 6,
+                }}>
+                  {t.contact.formChannel}
+                </label>
+                <select
+                  name="channel"
+                  value={formData.channel}
+                  onChange={e => setFormData(f => ({ ...f, channel: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    fontFamily: F.body,
+                    fontSize: 15,
+                    padding: '12px 16px',
+                    background: C.ivory,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 12,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    boxSizing: 'border-box',
+                    cursor: 'pointer',
+                  }}
+                  onFocus={e => e.target.style.borderColor = C.gold}
+                  onBlur={e => e.target.style.borderColor = C.border}
+                >
+                  <option value="">&mdash;</option>
+                  {Object.entries(t.contact.platforms).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <label style={{
+                  fontFamily: F.body,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: C.charcoal,
+                  display: 'block',
+                  marginBottom: 6,
+                }}>
+                  {t.contact.formMessage}
+                </label>
+                <textarea
+                  name="message"
+                  rows={4}
+                  value={formData.message}
+                  onChange={e => setFormData(f => ({ ...f, message: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    fontFamily: F.body,
+                    fontSize: 15,
+                    padding: '12px 16px',
+                    background: C.ivory,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 12,
+                    outline: 'none',
+                    transition: 'border-color 0.2s',
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={e => e.target.style.borderColor = C.gold}
+                  onBlur={e => e.target.style.borderColor = C.border}
+                />
+              </div>
+
+              <button
+                type="submit"
                 style={{
-                  padding: '14px 18px', borderRadius: 8, fontSize: 15,
-                  border: '1px solid rgba(0,0,0,0.1)', background: '#fff',
-                  outline: 'none', fontWeight: 300, transition: 'border-color 0.3s',
-                  minHeight: 44,
+                  width: '100%',
+                  fontFamily: F.body,
+                  fontSize: 15,
+                  fontWeight: 500,
+                  background: C.charcoal,
+                  color: C.ivory,
+                  border: 'none',
+                  borderRadius: 12,
+                  padding: '14px 24px',
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
                 }}
-                onFocus={(e) => e.target.style.borderColor = C.gold}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(0,0,0,0.1)'}
-              />
-
-              <select
-                name="channel"
-                value={formData.channel}
-                onChange={(e) => setFormData({ ...formData, channel: e.target.value })}
-                style={{
-                  padding: '14px 18px', borderRadius: 8, fontSize: 15,
-                  border: '1px solid rgba(0,0,0,0.1)', background: '#fff',
-                  outline: 'none', fontWeight: 300, color: formData.channel ? C.textDark : '#999',
-                  transition: 'border-color 0.3s', minHeight: 44, cursor: 'pointer',
-                }}
-                onFocus={(e) => e.target.style.borderColor = C.gold}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(0,0,0,0.1)'}
-              >
-                <option value="" disabled>{t.contact.formChannel}</option>
-                {Object.values(t.contact.platforms || {}).map((ch) => (
-                  <option key={ch} value={ch}>{ch}</option>
-                ))}
-              </select>
-
-              <textarea
-                name="message" placeholder={t.contact.formMessage}
-                rows={4}
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                style={{
-                  padding: '14px 18px', borderRadius: 8, fontSize: 15,
-                  border: '1px solid rgba(0,0,0,0.1)', background: '#fff',
-                  outline: 'none', fontWeight: 300, resize: 'vertical',
-                  transition: 'border-color 0.3s', minHeight: 100,
-                  fontFamily: FONT.sans,
-                }}
-                onFocus={(e) => e.target.style.borderColor = C.gold}
-                onBlur={(e) => e.target.style.borderColor = 'rgba(0,0,0,0.1)'}
-              />
-
-              <button type="submit" style={{
-                padding: '14px 32px', borderRadius: 8, fontSize: 15,
-                background: C.gold, color: '#fff', border: 'none',
-                fontWeight: 500, cursor: 'pointer', transition: 'opacity 0.3s',
-                minHeight: 48, letterSpacing: '0.02em',
-              }}
-                onMouseEnter={(e) => e.target.style.opacity = '0.85'}
-                onMouseLeave={(e) => e.target.style.opacity = '1'}
+                onMouseEnter={e => e.target.style.background = '#3d3832'}
+                onMouseLeave={e => e.target.style.background = C.charcoal}
               >
                 {t.contact.formSubmit}
               </button>
@@ -1443,43 +1601,114 @@ export default function App() {
         </div>
       </section>
 
-      {/* ─────────────────────────────────────────────
-          9. FOOTER
-          ───────────────────────────────────────────── */}
+      {/* ─── FOOTER (dark) ────────────────────────────────── */}
       <footer style={{
-        background: C.dark, borderTop: `1px solid ${C.gold}`,
-        padding: '40px clamp(20px, 4vw, 60px)',
+        background: C.charcoal,
+        borderTop: '1px solid rgba(139,105,20,0.2)',
+        padding: '48px 24px',
       }}>
         <div style={{
-          maxWidth: 1100, margin: '0 auto',
-          display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between',
-          alignItems: 'center', gap: 16,
+          ...maxWidth,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div>
             <span style={{
-              fontFamily: FONT.serif, fontSize: 22, fontWeight: 600,
-              color: C.gold, letterSpacing: '0.05em',
+              fontFamily: F.heading,
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: 20,
+              color: C.gold,
+              letterSpacing: 2,
             }}>
               LK
             </span>
-            <span style={{ fontSize: 13, color: C.textMuted, fontWeight: 300 }}>
+            <p style={{
+              fontFamily: F.body,
+              fontSize: 13,
+              color: C.warmGray,
+              margin: '8px 0 0 0',
+            }}>
               &copy; {new Date().getFullYear()} {t.footer.copyright}
-            </span>
+            </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <a href="#" style={{
-              fontSize: 13, color: C.gold, textDecoration: 'none',
-              fontWeight: 400, transition: 'opacity 0.3s',
+          <a
+            href="#"
+            style={{
+              fontFamily: F.body,
+              fontSize: 13,
+              color: C.gold,
+              textDecoration: 'none',
+              transition: 'color 0.2s',
             }}
-              onMouseEnter={(e) => e.target.style.opacity = '0.7'}
-              onMouseLeave={(e) => e.target.style.opacity = '1'}
-            >
-              {t.footer.investorGuide}
-            </a>
-          </div>
+            onMouseEnter={e => e.target.style.color = C.goldHover}
+            onMouseLeave={e => e.target.style.color = C.gold}
+          >
+            {t.footer.investorGuide}
+          </a>
         </div>
       </footer>
 
+      {/* ─── GLOBAL STYLES ────────────────────────────────── */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Outfit:wght@300;400;500&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html {
+          scroll-behavior: smooth;
+          scroll-padding-top: 80px;
+        }
+
+        body {
+          margin: 0;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+
+        @keyframes subtleFloat {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50% { transform: translateX(-50%) translateY(6px); }
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Desktop nav visible, hamburger hidden */
+        .lk-nav-desktop { display: flex !important; }
+        .lk-nav-cta { display: inline-flex !important; }
+        .lk-nav-hamburger { display: none !important; }
+
+        @media (max-width: 768px) {
+          .lk-nav-desktop { display: none !important; }
+          .lk-nav-cta { display: none !important; }
+          .lk-nav-hamburger { display: flex !important; }
+
+          .lk-hero-grid {
+            grid-template-columns: 1fr !important;
+            gap: 32px !important;
+          }
+
+          .lk-why-grid {
+            grid-template-columns: 1fr !important;
+            gap: 32px !important;
+          }
+        }
+
+        input:focus, select:focus, textarea:focus {
+          outline: none;
+        }
+
+        ::selection {
+          background: rgba(139,105,20,0.15);
+          color: #2C2824;
+        }
+      `}</style>
     </div>
   );
 }
